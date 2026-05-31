@@ -1,0 +1,4 @@
+Shall we start to design the architecture? Fisrt of all, read @docs/GiveLearnersHint_Product_Design.md so that you figure
+out what we are going to create. For the first MVP, I won't deploy this app on the cloud. Just on the local is fine. The
+constraint is we need to use Python for the backend. I think we should use FastAPI since we need to use Python. For the
+frontend, we can discuss it. We're going to use Anthropic for LLM parts of this app. Consider if the information is enough. Ask me necessary questions. Suggest what the frontend should look like.
