@@ -6,13 +6,30 @@ const FIELDS = [
   { id: 'tried', label: 'What have you already tried?' },
 ]
 
-function BlockerDetail({ submission, onSubmit }) {
+function BlockerDetail({ submission }) {
   const [values, setValues] = useState({ expected: '', happened: '', tried: '' })
+  const [loading, setLoading] = useState(false)
+  const [guidance, setGuidance] = useState(null)
 
-  const canSubmit = FIELDS.every(f => values[f.id].trim())
+  const canSubmit = FIELDS.every(f => values[f.id].trim()) && !loading
 
   function handleChange(id, value) {
     setValues(prev => ({ ...prev, [id]: value }))
+  }
+
+  async function handleSubmit() {
+    setLoading(true)
+    try {
+      const res = await fetch('/api/blocker', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ description: submission, ...values }),
+      })
+      const data = await res.json()
+      setGuidance(data.guidance)
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -49,16 +66,25 @@ function BlockerDetail({ submission, onSubmit }) {
         ))}
       </div>
 
-      <button
-        type="button"
-        onClick={() => canSubmit && onSubmit(values)}
-        disabled={!canSubmit}
-        className={`mt-8 w-full bg-indigo-600 text-white py-3 rounded-lg font-medium ${
-          canSubmit ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'
-        }`}
-      >
-        Get guidance
-      </button>
+      {guidance ? (
+        <div className="mt-8 bg-indigo-50 border border-indigo-100 rounded-lg p-4">
+          <p className="text-xs font-medium text-indigo-400 uppercase tracking-wide mb-2">
+            Guidance
+          </p>
+          <p className="text-gray-800 text-sm leading-relaxed">{guidance}</p>
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={!canSubmit}
+          className={`mt-8 w-full bg-indigo-600 text-white py-3 rounded-lg font-medium ${
+            canSubmit ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'
+          }`}
+        >
+          {loading ? 'Thinking…' : 'Get guidance'}
+        </button>
+      )}
     </>
   )
 }
@@ -73,7 +99,7 @@ export default function App() {
     <main className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
       <div className="w-full max-w-xl">
         {submission !== null ? (
-          <BlockerDetail submission={submission} onSubmit={() => {}} />
+          <BlockerDetail submission={submission} />
         ) : (
           <>
             <h1 className="text-3xl font-semibold text-gray-900 mb-2">
