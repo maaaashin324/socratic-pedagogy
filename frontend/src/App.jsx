@@ -166,14 +166,14 @@ function Dialogue({ initialMessages, onExit }) {
         <div className="max-w-xl mx-auto flex gap-3">
           <button
             type="button"
-            onClick={() => onExit('figured-out')}
+            onClick={() => onExit('figured-out', messages)}
             className="flex-1 bg-green-600 text-white py-2 rounded-lg font-medium text-sm cursor-pointer"
           >
             I figured it out
           </button>
           <button
             type="button"
-            onClick={() => onExit('stop')}
+            onClick={() => onExit('stop', messages)}
             className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-medium text-sm cursor-pointer"
           >
             I need to stop for now
@@ -184,18 +184,105 @@ function Dialogue({ initialMessages, onExit }) {
   )
 }
 
+function BreakthroughScreen({ onNewSession }) {
+  return (
+    <main className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
+      <div className="w-full max-w-xl text-center">
+        <h1 className="text-3xl font-semibold text-gray-900 mb-4">Nice work.</h1>
+        <p className="text-gray-500 mb-8">The struggle is the learning.</p>
+        <button
+          type="button"
+          onClick={onNewSession}
+          className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium cursor-pointer"
+        >
+          Start a new session
+        </button>
+      </div>
+    </main>
+  )
+}
+
+function ExitSummaryScreen({ submission, messages, onNewSession }) {
+  const lastAiQuestion = [...messages].reverse().find(m => m.role === 'assistant')
+
+  return (
+    <main className="min-h-screen bg-gray-50 p-6 pb-12">
+      <div className="max-w-xl mx-auto">
+        <h1 className="text-3xl font-semibold text-gray-900 mb-2">Sleeping on it is part of the process.</h1>
+        <p className="text-gray-500 mb-8">Rest up. You can pick this back up tomorrow.</p>
+
+        <div className="bg-gray-100 rounded-lg p-4 mb-6">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">Your blocker</p>
+          <p className="text-gray-700 text-sm">{submission}</p>
+        </div>
+
+        <div className="mb-6">
+          <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-3">Your session</p>
+          <div className="space-y-3">
+            {messages.map((msg, i) => (
+              <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+                <div className={`max-w-sm rounded-lg p-3 text-sm leading-relaxed ${
+                  msg.role === 'user'
+                    ? 'bg-gray-200 text-gray-900'
+                    : 'bg-indigo-50 border border-indigo-100 text-gray-800'
+                }`}>
+                  {msg.content}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {lastAiQuestion && (
+          <div className="bg-white border border-indigo-200 rounded-lg p-4 mb-8">
+            <p className="text-xs font-medium text-indigo-500 uppercase tracking-wide mb-2">Bring this to office hours tomorrow</p>
+            <p className="text-gray-800 text-sm leading-relaxed">{lastAiQuestion.content}</p>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={onNewSession}
+          className="w-full bg-indigo-600 text-white py-3 rounded-lg font-medium cursor-pointer"
+        >
+          Start a new session
+        </button>
+      </div>
+    </main>
+  )
+}
+
 export default function App() {
   const [draft, setDraft] = useState('')
   const [submission, setSubmission] = useState(null)
   const [dialogue, setDialogue] = useState(null)
+  const [closing, setClosing] = useState(null)
 
   const canSubmit = draft.trim().length > 0
+
+  function handleNewSession() {
+    setClosing(null)
+    setDialogue(null)
+    setSubmission(null)
+    setDraft('')
+  }
+
+  if (closing?.type === 'figured-out') {
+    return <BreakthroughScreen onNewSession={handleNewSession} />
+  }
+
+  if (closing?.type === 'stop') {
+    return <ExitSummaryScreen submission={submission} messages={closing.messages} onNewSession={handleNewSession} />
+  }
 
   if (dialogue) {
     return (
       <Dialogue
         initialMessages={dialogue}
-        onExit={() => setDialogue(null)}
+        onExit={(type, messages) => {
+          setDialogue(null)
+          setClosing({ type, messages })
+        }}
       />
     )
   }
