@@ -9,6 +9,7 @@ const FIELDS = [
 function BlockerDetail({ submission, onGuidance }) {
   const [values, setValues] = useState({ expected: '', happened: '', tried: '' })
   const [loading, setLoading] = useState(false)
+  const [error, setError] = useState(null)
 
   const canSubmit = FIELDS.every(f => values[f.id].trim()) && !loading
 
@@ -18,6 +19,7 @@ function BlockerDetail({ submission, onGuidance }) {
 
   async function handleSubmit() {
     setLoading(true)
+    setError(null)
     const userMsg =
       `My blocker: ${submission}\n\n` +
       `What I expected: ${values.expected}\n\n` +
@@ -29,8 +31,11 @@ function BlockerDetail({ submission, onGuidance }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ messages: [{ role: 'user', content: userMsg }] }),
       })
+      if (!res.ok) throw new Error('response error')
       const data = await res.json()
       onGuidance(userMsg, data.guidance)
+    } catch {
+      setError('Something went wrong. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -80,6 +85,7 @@ function BlockerDetail({ submission, onGuidance }) {
       >
         {loading ? 'Thinking…' : 'Get guidance'}
       </button>
+      {error && <p className="mt-3 text-sm text-red-600 text-center">{error}</p>}
     </>
   )
 }
