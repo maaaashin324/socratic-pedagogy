@@ -1,4 +1,4 @@
-import os
+from typing import Literal
 
 from anthropic import Anthropic
 from anthropic.types import TextBlock
@@ -34,11 +34,13 @@ Rules:
 Keep your response concise — two to four sentences maximum."""
 
 
-class BlockerRequest(BaseModel):
-    description: str
-    expected: str
-    happened: str
-    tried: str
+class Message(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str
+
+
+class DialogueRequest(BaseModel):
+    messages: list[Message]
 
 
 client = Anthropic()
@@ -49,23 +51,13 @@ def health():
     return {"status": "ok"}
 
 
-@app.post("/api/blocker")
-def post_blocker(body: BlockerRequest):
+@app.post("/api/dialogue")
+def post_dialogue(body: DialogueRequest):
     message = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=256,
         system=SYSTEM_PROMPT,
-        messages=[
-            {
-                "role": "user",
-                "content": (
-                    f"My blocker: {body.description}\n\n"
-                    f"What I expected: {body.expected}\n\n"
-                    f"What actually happened: {body.happened}\n\n"
-                    f"What I've tried: {body.tried}"
-                ),
-            }
-        ],
+        messages=[{"role": m.role, "content": m.content} for m in body.messages],
     )
     text = next((b.text for b in message.content if isinstance(b, TextBlock)), "")
     return {"guidance": text}

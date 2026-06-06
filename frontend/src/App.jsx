@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const FIELDS = [
   { id: 'expected', label: 'What did you expect?' },
@@ -6,10 +6,9 @@ const FIELDS = [
   { id: 'tried', label: 'What have you already tried?' },
 ]
 
-function BlockerDetail({ submission }) {
+function BlockerDetail({ submission, onGuidance }) {
   const [values, setValues] = useState({ expected: '', happened: '', tried: '' })
   const [loading, setLoading] = useState(false)
-  const [guidance, setGuidance] = useState(null)
 
   const canSubmit = FIELDS.every(f => values[f.id].trim()) && !loading
 
@@ -19,14 +18,19 @@ function BlockerDetail({ submission }) {
 
   async function handleSubmit() {
     setLoading(true)
+    const userMsg =
+      `My blocker: ${submission}\n\n` +
+      `What I expected: ${values.expected}\n\n` +
+      `What actually happened: ${values.happened}\n\n` +
+      `What I've tried: ${values.tried}`
     try {
-      const res = await fetch('/api/blocker', {
+      const res = await fetch('/api/dialogue', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ description: submission, ...values }),
+        body: JSON.stringify({ messages: [{ role: 'user', content: userMsg }] }),
       })
       const data = await res.json()
-      setGuidance(data.guidance)
+      onGuidance(userMsg, data.guidance)
     } finally {
       setLoading(false)
     }
@@ -66,40 +70,149 @@ function BlockerDetail({ submission }) {
         ))}
       </div>
 
-      {guidance ? (
-        <div className="mt-8 bg-indigo-50 border border-indigo-100 rounded-lg p-4">
-          <p className="text-xs font-medium text-indigo-400 uppercase tracking-wide mb-2">
-            Guidance
-          </p>
-          <p className="text-gray-800 text-sm leading-relaxed">{guidance}</p>
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={!canSubmit}
+        className={`mt-8 w-full bg-indigo-600 text-white py-3 rounded-lg font-medium ${
+          canSubmit ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'
+        }`}
+      >
+        {loading ? 'Thinking…' : 'Get guidance'}
+      </button>
+    </>
+  )
+}
+
+function Dialogue({ initialMessages, onExit }) {
+  const [messages, setMessages] = useState(initialMessages)
+  const [reply, setReply] = useState('')
+  const [loading, setLoading] = useState(false)
+  const bottomRef = useRef(null)
+
+  const canSend = reply.trim().length > 0 && !loading
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, loading])
+
+  async function handleSend() {
+    const userMsg = { role: 'user', content: reply }
+    const next = [...messages, userMsg]
+    setMessages(next)
+    setReply('')
+    setLoading(true)
+    try {
+      const res = await fetch('/api/dialogue', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ messages: next }),
+      })
+      const data = await res.json()
+      setMessages(prev => [...prev, { role: 'assistant', content: data.guidance }])
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  return (
+    <main className="min-h-screen bg-gray-50 p-6 pb-28">
+      <div className="max-w-xl mx-auto">
+        <h1 className="text-3xl font-semibold text-gray-900 mb-2">Keep going.</h1>
+        <p className="text-gray-500 mb-4">Work through it turn by turn.</p>
+
+        <div className="h-96 overflow-y-auto bg-white border border-gray-200 rounded-lg p-4 mb-4 space-y-4">
+          {messages.map((msg, i) => (
+            <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+              <div className={`max-w-sm rounded-lg p-3 text-sm leading-relaxed ${
+                msg.role === 'user'
+                  ? 'bg-gray-200 text-gray-900'
+                  : 'bg-indigo-50 border border-indigo-100 text-gray-800'
+              }`}>
+                {msg.content}
+              </div>
+            </div>
+          ))}
+          {loading && (
+            <div className="flex justify-start">
+              <div className="bg-indigo-50 border border-indigo-100 rounded-lg p-3 text-sm text-indigo-400 italic">
+                Thinking…
+              </div>
+            </div>
+          )}
+          <div ref={bottomRef} />
         </div>
-      ) : (
+
+        <textarea
+          rows={3}
+          value={reply}
+          onChange={e => setReply(e.target.value)}
+          placeholder="Your reply…"
+          className="w-full border border-gray-300 rounded-lg p-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none"
+        />
         <button
           type="button"
-          onClick={handleSubmit}
-          disabled={!canSubmit}
-          className={`mt-8 w-full bg-indigo-600 text-white py-3 rounded-lg font-medium ${
-            canSubmit ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'
+          onClick={handleSend}
+          disabled={!canSend}
+          className={`mt-2 w-full bg-indigo-600 text-white py-3 rounded-lg font-medium ${
+            canSend ? 'cursor-pointer' : 'opacity-50 cursor-not-allowed'
           }`}
         >
-          {loading ? 'Thinking…' : 'Get guidance'}
+          Send
         </button>
-      )}
-    </>
+      </div>
+
+      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4">
+        <div className="max-w-xl mx-auto flex gap-3">
+          <button
+            type="button"
+            onClick={() => onExit('figured-out')}
+            className="flex-1 bg-green-600 text-white py-2 rounded-lg font-medium text-sm cursor-pointer"
+          >
+            I figured it out
+          </button>
+          <button
+            type="button"
+            onClick={() => onExit('stop')}
+            className="flex-1 bg-gray-200 text-gray-700 py-2 rounded-lg font-medium text-sm cursor-pointer"
+          >
+            I need to stop for now
+          </button>
+        </div>
+      </div>
+    </main>
   )
 }
 
 export default function App() {
   const [draft, setDraft] = useState('')
   const [submission, setSubmission] = useState(null)
+  const [dialogue, setDialogue] = useState(null)
 
   const canSubmit = draft.trim().length > 0
+
+  if (dialogue) {
+    return (
+      <Dialogue
+        initialMessages={dialogue}
+        onExit={() => setDialogue(null)}
+      />
+    )
+  }
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-50 p-6">
       <div className="w-full max-w-xl">
         {submission !== null ? (
-          <BlockerDetail submission={submission} />
+          <BlockerDetail
+            submission={submission}
+            onGuidance={(userMsg, aiMsg) =>
+              setDialogue([
+                { role: 'user', content: userMsg },
+                { role: 'assistant', content: aiMsg },
+              ])
+            }
+          />
         ) : (
           <>
             <h1 className="text-3xl font-semibold text-gray-900 mb-2">
