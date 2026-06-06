@@ -17,7 +17,7 @@ A Socratic AI guide for coding bootcamp students. Instead of giving answers, it 
 
 | Layer | Technology |
 |---|---|
-| Backend | Python 3.11+, FastAPI, uvicorn |
+| Backend | Python 3.14, FastAPI, uvicorn |
 | Frontend | React 19, Vite, Tailwind CSS v4 |
 | AI | Anthropic API (claude-sonnet-4-6) |
 
@@ -25,7 +25,7 @@ A Socratic AI guide for coding bootcamp students. Instead of giving answers, it 
 
 ## Prerequisites
 
-- Python 3.11+
+- Python 3.14
 - Node.js 18+
 - An [Anthropic API key](https://console.anthropic.com/)
 
