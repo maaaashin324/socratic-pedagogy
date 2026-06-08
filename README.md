@@ -122,3 +122,11 @@ socratic-pedagogy/
 ## Product documentation
 
 Full user personas, customer journey map, user flow, and user story mapping are in [`docs/GiveLearnersHint_Product_Design.md`](docs/GiveLearnersHint_Product_Design.md).
+
+### Figma
+
+- [User Persona](https://www.figma.com/design/kbsrAz0iSTcb0dMeQhyheH/GiveLearnersHint-%E2%80%94-Product-Design?node-id=0-1)
+- [Customer Journey Map](https://www.figma.com/design/kbsrAz0iSTcb0dMeQhyheH/GiveLearnersHint-%E2%80%94-Product-Design?node-id=1-2)
+- [Problem Statement and Goal Statement](https://www.figma.com/design/kbsrAz0iSTcb0dMeQhyheH/GiveLearnersHint-%E2%80%94-Product-Design?node-id=1-3)
+- [User Flow](https://www.figma.com/design/kbsrAz0iSTcb0dMeQhyheH/GiveLearnersHint-%E2%80%94-Product-Design?node-id=1-4)
+- [User Story Mapping](https://www.figma.com/design/kbsrAz0iSTcb0dMeQhyheH/GiveLearnersHint-%E2%80%94-Product-Design?node-id=1-5)
